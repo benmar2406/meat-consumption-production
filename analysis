@@ -1,0 +1,316 @@
+# Global meat production and consumption
+We are going to analyze data from different sources to find answers to our key topics:
+* What is the the trend of meat production in terms of tonnes produced worldwide?
+* Who is accountable for the majority of produced and consumed meat (countries, regions,...)
+* How much meat is produced yearly and how many animals are slaugetered?
+
+## Sources
+
+* [Our world in data - FAO - Global meat production](https://ourworldindata.org/grapher/global-meat-production?facet=entity#all-charts)
+* [Our world in data - Meat supply vs. GDP per capita, 2021](https://ourworldindata.org/grapher/meat-consumption-vs-gdp-per-capita)
+### Meat Production Data
+import pandas as pd
+import matplotlib.pyplot as plt 
+import seaborn as sns
+import numpy as np
+
+# source: our world in data
+global_meat_production = pd.read_csv('global-meat-production.csv')
+global_meat_production.rename(columns={"Meat, total | 00001765 || Production | 005510 || tonnes": "Total Meat production (tonnes)"}, inplace=True)
+
+print("Meat Production")
+print(global_meat_production.head())
+print("___________________________________")
+print(global_meat_production.info())
+
+# Drop duplicates
+global_meat_production = global_meat_production.drop_duplicates()
+### Meat Consumption Data
+meat_consumption_per_capita = pd.read_csv('meat-consumption-vs-gdp-per-capita.csv')
+
+meat_consumption_per_capita.rename(columns={"Meat, total | 00002943 || Food available for consumption | 0645pc || kilograms per year per capita" : "Kilograms of Meat consumed per capita/year"}, inplace=True)
+
+print("Meat Consumption")
+print(meat_consumption_per_capita.head())
+print("___________________________________")
+print(meat_consumption_per_capita.info())
+print("___________________________________")
+### Clean up Consumption Data
+meat_consumption_per_capita = meat_consumption_per_capita[meat_consumption_per_capita['Year'] != 2022]
+
+# Drop duplicates
+meat_consumption_per_capita = meat_consumption_per_capita.drop_duplicates()
+
+# Calculate median values for the relevant columns
+median_meat_consumption = meat_consumption_per_capita['Kilograms of Meat consumed per capita/year'].median()
+median_gdp_per_capita = meat_consumption_per_capita['GDP per capita, PPP (constant 2017 international $)'].median()
+
+# Fill NaN values with the median values
+meat_consumption_per_capita['Kilograms of Meat consumed per capita/year'] = meat_consumption_per_capita['Kilograms of Meat consumed per capita/year'].fillna(median_meat_consumption)
+meat_consumption_per_capita['GDP per capita, PPP (constant 2017 international $)'] = meat_consumption_per_capita['GDP per capita, PPP (constant 2017 international $)'].fillna(median_gdp_per_capita)
+
+# View the DataFrame to confirm NaN values are filled
+print(meat_consumption_per_capita.info())
+### Production of meat: compare global trend vs. Western Europe and Germany
+# World
+production_global = global_meat_production[global_meat_production['Entity'] == 'World']
+
+# Western Europe
+production_western_europe = global_meat_production[global_meat_production['Entity'] == 'Western Europe (FAO)']
+
+# Germany
+production_germany = global_meat_production[global_meat_production['Entity'] == 'Germany']
+
+fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(18, 6))
+
+axes[0].plot(production_global['Year'], production_global['Total Meat production (tonnes)'], label='Global')
+axes[0].set_title('Global Meat Production Over Time')
+axes[0].set_xlabel('Year')
+axes[0].set_ylabel('Meat Production (tonnes)')
+axes[0].legend(title='Region')
+axes[0].grid(True)
+
+axes[1].plot(production_western_europe['Year'], production_western_europe['Total Meat production (tonnes)'], label='Western Europe')
+axes[1].set_title('Western Europe: Meat Production Over Time')
+axes[1].set_xlabel('Year')
+axes[1].set_ylabel('Meat Production (tonnes)')
+axes[1].legend(title='Region')
+axes[1].grid(True)
+
+axes[2].plot(production_germany['Year'], production_germany['Total Meat production (tonnes)'], label='Germany')
+axes[2].set_title('Germany: Meat Production Over Time')
+axes[2].set_xlabel('Year')
+axes[2].set_ylabel('Meat Production (tonnes)')
+axes[2].legend(title='Region')
+axes[2].grid(True)
+
+# Adjust layout to prevent overlap
+plt.tight_layout()
+
+plt.show()
+
+production_global.to_json('production_global.json', orient='records', lines=False)
+production_western_europe.to_json('production_western_europe.json', orient='records', lines=False)
+
+
+The short-term downturn in the popularity of meat production in the 90s is due to increasing health, ethical and sustainable awareness, but also to the outbreak of BSE. The subsequent increase is due to marketing strategies and new (to-go) products/snacks, globalization effects and thus increased availability. 
+
+But still, today in Germany and other Western countries, meat production is currently declining. This does not necessarily mean that the consumption is decreasing in the same rate since this trend could also be realted to an increase oof imported meat products.
+## Meat consumption worldwide per capita
+
+# World
+consumption_global = meat_consumption_per_capita[meat_consumption_per_capita['Entity'] == 'World']
+
+# Western Europe
+consumption_western_europe = meat_consumption_per_capita[meat_consumption_per_capita['Entity'] == 'Western Europe (FAO)']
+
+# Germany
+consumption_germany = meat_consumption_per_capita[meat_consumption_per_capita['Entity'] == 'Germany']
+
+consumption_global.to_json('consumption_global.json', orient='records', lines=True)
+
+fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(18, 6))
+
+axes[0].plot(consumption_global['Year'], consumption_global['Kilograms of Meat consumed per capita/year'], label='Global')
+axes[0].set_title('Global Meat Consumption Over Time')
+axes[0].set_xlabel('Year')
+axes[0].set_ylabel('Meat Consumption (tonnes)')
+axes[0].legend(title='Region')
+axes[0].grid(True)
+
+axes[1].plot(consumption_western_europe['Year'], consumption_western_europe['Kilograms of Meat consumed per capita/year'], label='Western Europe')
+axes[1].set_title('Western Europe: Meat Consumption Over Time')
+axes[1].set_xlabel('Year')
+axes[1].set_ylabel('Meat Consumption (tonnes)')
+axes[1].legend(title='Region')
+axes[1].grid(True)
+
+axes[2].plot(consumption_germany['Year'], consumption_germany['Kilograms of Meat consumed per capita/year'], label='Germany')
+axes[2].set_title('Germany: Meat Consumption Over Time')
+axes[2].set_xlabel('Year')
+axes[2].set_ylabel('Meat Consumption (tonnes)')
+axes[2].legend(title='Region')
+axes[2].grid(True)
+
+# Adjust layout to prevent overlap
+plt.tight_layout()
+
+plt.show()
+
+
+# Filter the dataset for the year 2021
+meat_consumption_2021 = meat_consumption_per_capita[meat_consumption_per_capita['Year'] == 2021]
+
+# Define patterns or specific entities to exclude
+patterns_to_exclude = [
+    'FAO', 'WB', 'World', 'Africa', 'Asia', 'Europe', 'Americas', 
+    'Oceania', 'Eastern', 'Western', 'Southern', 'Northern', 'Caribbean',
+    'Union', 'Developing', 'Small Island', 'Low-income', 'High-income',
+    'Upper-middle-income', 'Lower-middle-income', 'Arab', 'Central America',
+    'South America', 'East Asia', 'Latin America'
+]
+
+
+
+
+# Filter out regions and non-country entities for 2021
+meat_consumption_countries_only = meat_consumption_2021[~meat_consumption_2021['Entity'].str.contains('|'.join(patterns_to_exclude))]
+
+# Filter out regions and non-country entities for all time
+meat_consumption_countries_only_all_time = meat_consumption_per_capita[~meat_consumption_per_capita['Entity'].str.contains('|'.join(patterns_to_exclude))]
+
+
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+# Create scatterplot with a predefined Seaborn color palette
+plt.figure(figsize=(10, 6))
+
+sns.scatterplot(data=meat_consumption_countries_only, 
+                x='GDP per capita, PPP (constant 2017 international $)', 
+                y='Kilograms of Meat consumed per capita/year',
+                hue='Entity',  # Example, assuming there's a 'Continent' column
+                palette='Set2',   # Use a predefined Seaborn palette
+                alpha=0.7,
+                legend=False)  # Disable the legend
+
+sns.regplot(data=meat_consumption_countries_only, 
+            x='GDP per capita, PPP (constant 2017 international $)', 
+            y='Kilograms of Meat consumed per capita/year',
+            scatter=False, 
+            color='red', 
+            line_kws={"linewidth":2})
+
+plt.show()
+
+meat_consumption_countries_only.to_json('meat_consumption_countries_only.json', orient='records', lines=True)
+
+
+plt.figure(figsize=(8, 6))
+sns.boxplot(y='Kilograms of Meat consumed per capita/year', data=meat_consumption_countries_only_all_time)
+plt.title('Boxplot of Meat Consumption for All Data')
+plt.ylabel('Kilograms of Meat consumed per capita/year')
+plt.show()
+
+
+### First conclusion
+The relationship appears to have some degree of linearity. However, the data points are spread out, especially at higher GDP levels.
+The spread of the data and the presence of outliers or clusters at certain points can influence the linearity and the strength of the relationship.
+
+There is a positive correlation between GDP per capita and meat consumption, but it’s not perfectly linear, as there are other factors at play. While there is a positive linear trend, the data shows some variability, and the relationship may not be perfectly linear. 
+
+Income Disparity in Consumption: The disparity in meat consumption is more pronounced at higher income levels, where some countries consume significantly more meat than others. 
+
+The spread of points at higher GDP levels also suggests greater variability in meat consumption. Some high-income countries have very high meat consumption, while others are lower, but still higher than in low-income countries.
+
+It seems that countries increase their meat consumation when they "rise up". In the rich countries the consumation spreads more widely and seems to be dependent on other factors as well.
+import numpy as np
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import r2_score
+
+# Assuming 'meat_consumption_countries_only' is already created and filtered for the year 2021 and other criteria
+# Prepare the data for regression
+X = meat_consumption_countries_only['GDP per capita, PPP (constant 2017 international $)'].values.reshape(-1, 1)
+y = meat_consumption_countries_only['Kilograms of Meat consumed per capita/year'].values
+
+# Fit the linear regression model
+model = LinearRegression()
+model.fit(X, y)
+
+# Predict the values
+y_pred = model.predict(X)
+
+# Calculate the R-squared value
+r_squared = r2_score(y, y_pred)
+
+print(f'R-squared value: {r_squared}')
+
+An R-squared of 0.251 indicates a moderate fit, meaning that while there is some relationship between GDP per capita and meat consumption, GDP alone does not fully explain the differences in meat consumption across countries. 
+
+Other factors, probably cultural factors, dietary preferences, regional influences or availability on markets come to play as well.
+
+
+# Define the income groups of interest
+income_groups = ['Low-income', 'High-income', 'Upper-middle-income', 'Lower-middle-income']
+
+# Filter the dataset to include only the specified income groups
+meat_consumption_income_groups = meat_consumption_2021[meat_consumption_2021['Entity'].str.contains('|'.join(income_groups))]
+
+# Group the data by 'Entity' and calculate the mean meat consumption for each income group
+meat_consumption_grouped = meat_consumption_income_groups.groupby('Entity')['Kilograms of Meat consumed per capita/year'].mean()
+colors = ['#FF9999', '#66B2FF', '#99FF99', '#FFCC99']
+
+# Create a bar plot
+plt.figure(figsize=(10, 6))
+meat_consumption_grouped.plot(kind='bar', color=colors)
+
+# Adding titles and labels
+plt.title('Meat Consumption per Capita by Income Group (2021)')
+plt.xlabel('Income Group')
+plt.ylabel('Kilograms of Meat consumed per capita/year')
+
+# Show the plot
+plt.show()
+
+meat_consumption_grouped.to_json('meat_consumption_grouped.json', orient='records', lines=True)
+
+# Filter the DataFrame for 'Upper-middle-income' and 'High-income'
+upper_and_high_income = meat_consumption_2021[meat_consumption_2021['Entity'].str.contains('Upper-middle-income|High-income', regex=True)]
+# Calculate the median meat consumption for the combined groups
+median_combined_income = upper_and_high_income['Kilograms of Meat consumed per capita/year'].median()
+print(f"Median Meat Consumption in 2021 for 'Upper-middle-income' and 'High-income': {median_combined_income} kg per capita")
+
+lower_and_low_income = meat_consumption_2021[meat_consumption_2021['Entity'].str.contains('Low-income|Lower-middle-income', regex=True)]
+# Calculate the median meat consumption for the combined groups
+low_median_combined_income = lower_and_low_income['Kilograms of Meat consumed per capita/year'].median()
+print(f"Median Meat Consumption in 2021 for low and lower income countries: {low_median_combined_income} kg per capita")
+
+percentage_difference = ((median_combined_income - low_median_combined_income) / low_median_combined_income) * 100
+
+print(f"Median Meat Consumption in 2021 for higher income countries compared to lower income countries is {round(percentage_difference)}%.")
+
+
+consumption_weurope = meat_consumption_2021[meat_consumption_2021['Entity'] == 'Western Europe (FAO)']
+median_weurope = consumption_weurope['Kilograms of Meat consumed per capita/year'].median()
+print(median_weurope)
+
+consumption_weurope = meat_consumption_2021[meat_consumption_2021['Entity'] == 'Germany']
+median_germany = consumption_weurope['Kilograms of Meat consumed per capita/year'].median()
+print(median_germany)
+
+
+import geopandas as gpd
+import matplotlib.pyplot as plt
+
+# Use .loc[] to avoid the SettingWithCopyWarning
+meat_consumption_countries_only.loc[
+    meat_consumption_countries_only['Entity'] == 'United States', 'Entity'
+] = 'United States of America'
+
+
+# Load the world shapefile
+world = gpd.read_file('ne_110m_admin_0_countries/ne_110m_admin_0_countries.shp')
+
+# Merge the DataFrame with the world GeoDataFrame
+merged = world.set_index('NAME').join(meat_consumption_countries_only.set_index('Entity'))
+
+# Plotting the heatmap
+fig, ax = plt.subplots(1, 1, figsize=(15, 10))
+merged.plot(column='Kilograms of Meat consumed per capita/year', 
+            cmap='OrRd', 
+            linewidth=0.8, 
+            ax=ax, 
+            edgecolor='0.8', 
+            legend=True)
+
+ax.set_title('Meat Consumption Per Capita by Country (2021)', fontsize=15)
+ax.set_axis_off()
+
+plt.show()
+
+## Conclusion
+Even if the GDP doesn't explain the variance in meat consumption we clearly can see that the amount of meat consumed is a question of wealth and income in these countries. Richer countries consume more than **five times** the amount of meat than lowe income countries - Whereas in the richer countries **76kg** were consumed per capita, in the poorer countries it have been only **14kg**.
+
